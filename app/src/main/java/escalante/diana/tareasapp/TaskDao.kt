@@ -20,4 +20,15 @@ interface TaskDao {
 
     @Delete
     suspend fun delete(task: TaskEntity)
+
+    @Query("""
+        SELECT * FROM tasks
+        WHERE titulo LIKE '%' || :query || '%'
+        ORDER BY 
+            CASE WHEN :order = 'RECIENTES' THEN creado_en END DESC,
+            CASE WHEN :order = 'ANTIGUAS' THEN creado_en END ASC,
+            CASE WHEN :order = 'ALFABETICO_AZ' THEN titulo END ASC,
+            CASE WHEN :order = 'ALFABETICO_ZA' THEN titulo END DESC
+    """)
+    fun searchTasks(query: String, order: String): Flow<List<TaskEntity>>
 }

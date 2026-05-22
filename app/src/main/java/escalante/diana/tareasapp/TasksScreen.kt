@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -35,11 +36,13 @@ fun TasksScreen(
         factory = TaskViewModel.Factory
     )
 ) {
-// Observa la lista de tareas del ViewModel.
-// collectAsStateWithLifecycle deja de escuchar
-// cuando la pantalla no está visible.
+    // Observa la lista de tareas del ViewModel.
+    // collectAsStateWithLifecycle deja de escuchar
+    // cuando la pantalla no está visible.
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
-// Estado local: texto del campo de nueva tarea.
+    val searchInput by viewModel.searchInput.collectAsStateWithLifecycle()
+    val currentOrder by viewModel.currentOrder.collectAsStateWithLifecycle()
+    // Estado local: texto del campo de nueva tarea.
     var nuevaTareaTexto by remember { mutableStateOf("") }
 
     var taskToDelete by remember {
@@ -86,13 +89,48 @@ fun TasksScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp)
         ) {
-// ----- Titulo -----
+            // ----- Titulo -----
             Text(
                 text = stringResource(R.string.app_title),
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(vertical = 16.dp)
             )
-// ----- Lista de tareas -----
+
+            // ----- Barra de busqueda -----
+            SearchBar(
+                searchInput = searchInput,
+                onSearchInputChanged = { texto ->
+                    viewModel.onSearchInputChanged(texto)
+                },
+                onSearchClicked = {
+                    viewModel.executeSearch()
+                },
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            // ----- Filtro de ordenar -----
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                TaskOrder.values().forEach { orderOption ->
+                    val label = when (orderOption) {
+                        TaskOrder.RECIENTES -> "Más recientes"
+                        TaskOrder.ANTIGUAS -> "Más antiguas"
+                        TaskOrder.ALFABETICO_AZ -> "A-Z"
+                        TaskOrder.ALFABETICO_ZA -> "Z-A"
+                    }
+                    FilterChip(
+                        selected = currentOrder == orderOption,
+                        onClick = { viewModel.onOrderChanged(orderOption) },
+                        label = { Text(text = label) }
+                    )
+                }
+            }
+
+            // ----- Lista de tareas -----
             Box(modifier = Modifier.weight(1f)) {
                 if (tasks.isEmpty()) {
                     Text(
@@ -123,7 +161,7 @@ fun TasksScreen(
                     }
                 }
             }
-// ----- Campo para agregar nueva tarea -----
+            // ----- Campo para agregar nueva tarea -----
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
